@@ -58,17 +58,3 @@ graph LR
 - /data : 당연히 로컬 파일
 - docker-compose 안에서 관리
 
-### 파일 디렉토리 구조
-
-```
-dataset-server/
-├── docker-compose.yml
-├── nginx.conf
-├── app/
-│   └── main.py
-├── Alias_Storage.db
-├── utils.py              # FastAPI 외에도 해당 디렉토리 내부의 제어 및 편의를 위한 스크립트 코드
-├── SQL/                  # Alias_Storage용 쿼리문 모음
-└── data/ (예시)
-```
-
