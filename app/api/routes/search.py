@@ -1,6 +1,6 @@
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.core.database import get_db_connection
 from app.core.utils import build_file_url
@@ -16,7 +16,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 @router.get("/search_file/{alias}", response_model=FileResponse)
-async def search_file(alias: str):
+async def search_file(alias: str, request: Request):
     """
     Search for a single file by alias.
 
@@ -39,7 +39,8 @@ async def search_file(alias: str):
         physical_path = result["PHYSICAL_FILE_PATH"]
 
         try:
-            file_url = build_file_url(physical_path)
+            base_url = str(request.base_url).replace(":9006", "") # 포트번호 제거
+            file_url = build_file_url(physical_path, base_url)
             logger.info(f"Found alias {alias}: {file_url}")
             return FileResponse(alias=alias, url=file_url)
         except ValueError as e:
@@ -47,13 +48,13 @@ async def search_file(alias: str):
             raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/search_files/batch", response_model=BatchResponse)
-async def search_files_batch(request: BatchRequest):
+async def search_files_batch(batch_request: BatchRequest, request: Request):
     """
     Search for multiple files by aliases in batch.
 
     Returns found files and a list of not found aliases.
     """
-    aliases = request.aliases
+    aliases = batch_request.aliases
 
     # Validate batch size
     if len(aliases) > MAX_BATCH_SIZE:
@@ -85,11 +86,13 @@ async def search_files_batch(request: BatchRequest):
         # Create a dict of found aliases
         found_map = {row["ALIAS"]: row["PHYSICAL_FILE_PATH"] for row in rows}
 
+        base_url = str(request.base_url).replace(":9006", "")
+
         # Process results
         for alias in aliases:
             if alias in found_map:
                 try:
-                    file_url = build_file_url(found_map[alias])
+                    file_url = build_file_url(found_map[alias], base_url)
                     results.append(FileResponse(alias=alias, url=file_url))
                 except ValueError as e:
                     logger.error(f"Error converting path for alias {alias}: {e}")
@@ -102,6 +105,7 @@ async def search_files_batch(request: BatchRequest):
 
 @router.get("/search_tag", response_model=TagSearchResponse)
 async def search_tag(
+    request: Request,
     tag: Optional[str] = Query(None, description="Single tag to search for"),
     tags: Optional[str] = Query(None, description="Comma-separated list of tags (AND logic)"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
@@ -152,10 +156,12 @@ async def search_tag(
         cursor.execute(query, params + [limit, offset])
         rows = cursor.fetchall()
 
+        base_url = str(request.base_url).replace(":9006", "")
+
         results = []
         for row in rows:
             try:
-                file_url = build_file_url(row["PHYSICAL_FILE_PATH"])
+                file_url = build_file_url(row["PHYSICAL_FILE_PATH"], base_url)
                 results.append(FileResponse(alias=row["ALIAS"], url=file_url))
             except ValueError as e:
                 logger.error(f"Error converting path for alias {row['ALIAS']}: {e}")

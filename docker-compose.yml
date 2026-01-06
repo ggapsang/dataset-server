@@ -14,7 +14,7 @@ services:
       - ./Alias_Storage.db:/app/Alias_Storage.db:ro
     environment:
       - DATABASE_PATH=/app/Alias_Storage.db
-      - NGINX_BASE_URL=http://nginx
+      - NGINX_BASE_URL=http://localhost
       - MAX_BATCH_SIZE=1000
     networks:
       - dataset-network
