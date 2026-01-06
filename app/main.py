@@ -1,6 +1,7 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.api.api import api_router
 from app.schemas.file import ErrorResponse
 
@@ -33,11 +34,17 @@ app.include_router(api_router)
 # Error handlers
 @app.exception_handler(404)
 async def not_found_handler(request, exc):
-    return ErrorResponse(error="Not Found", detail=str(exc))
+    return JSONResponse(
+        status_code=404,
+        content=ErrorResponse(error="Not Found", detail=str(exc)).model_dump()
+    )
 
 @app.exception_handler(500)
 async def internal_error_handler(request, exc):
-    return ErrorResponse(error="Internal Server Error", detail=str(exc))
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(error="Internal Server Error", detail=str(exc)).model_dump()
+    )
 
 if __name__ == "__main__":
     import uvicorn
