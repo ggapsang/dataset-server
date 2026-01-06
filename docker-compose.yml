@@ -2,20 +2,17 @@ version: '3.8'
 
 services:
   fastapi:
-    image: python:3.11-slim
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: dataset-fastapi
-    working_dir: /app
-    command: >
-      bash -c "pip install --no-cache-dir -r requirements.txt &&
-               uvicorn main:app --host 0.0.0.0 --port 9006 --reload"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 9006 --reload
     ports:
       - "9006:9006"
     volumes:
-      - ./app:/app
+      - .:/app
       - ./Alias_Storage.db:/app/Alias_Storage.db:ro
-      - ./requirements.txt:/app/requirements.txt:ro
     environment:
-      - PYTHONUNBUFFERED=1
       - DATABASE_PATH=/app/Alias_Storage.db
       - NGINX_BASE_URL=http://nginx
       - MAX_BATCH_SIZE=1000
@@ -27,7 +24,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 20s
 
   nginx:
     image: nginx:alpine
